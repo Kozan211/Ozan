@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silvester Trinkspiel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #2c3e50, #000);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .title {
+            font-size: 50px;
+            margin: 20px 0;
+            color: orange;
+        }
+        .question-box, .team-box, .category-box {
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            max-width: 600px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: orange;
+            border: none;
+            color: black;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: darkorange;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div id="start-screen">
+            <div class="title">Silvester Trinkspiel</div>
+            <p>Ein lustiges Spiel für Silvester!</p>
+            <button onclick="showTeamSelection()">Start</button>
+        </div>
+
+        <div id="team-selection" style="display:none">
+            <div class="title">Teams erstellen</div>
+            <div class="team-box">
+                <input type="text" id="player-name" placeholder="Spielername">
+                <select id="team-name">
+                    <option value="Team 1">Team 1</option>
+                    <option value="Team 2">Team 2</option>
+                    <option value="Team 3">Team 3</option>
+                    <option value="Team 4">Team 4</option>
+                </select>
+                <button onclick="addPlayer()">Hinzufügen</button>
+            </div>
+            <div id="player-list"></div>
+            <button onclick="showCategorySelection()">Weiter</button>
+        </div>
+
+        <div id="category-selection" style="display:none">
+            <div class="title">Kategorie auswählen</div>
+            <div class="category-box">
+                <button onclick="selectCategory('Quiz')">Quiz</button>
+                <button onclick="selectCategory('Aufgabe')">Aufgabe</button>
+                <button onclick="selectCategory('Team Challenge')">Team Challenge</button>
+                <button onclick="selectCategory('Duell')">Duell</button>
+            </div>
+        </div>
+
+        <div id="question-screen" style="display:none">
+            <div class="title">Frage</div>
+            <div id="question-text" class="question-box"></div>
+            <button onclick="showAnswer()">Lösung anzeigen</button>
+            <button onclick="answerCorrect()" style="background-color:green;">Richtig</button>
+            <button onclick="answerWrong()" style="background-color:red;">Falsch</button>
+        </div>
+
+        <div id="answer-screen" style="display:none">
+            <div class="title">Lösung</div>
+            <div id="answer-text" class="question-box"></div>
+            <button onclick="nextPlayer()">Weiter</button>
+        </div>
+    </div>
+
+    <script>
+        const players = [];
+        const teams = {};
+        const questions = {
+            Quiz: [
+                { question: "Wie viele Spieler stehen gleichzeitig pro Team bei einem Fußballspiel auf dem Platz?", answer: "11" },
+                { question: "Welches Element hat das chemische Symbol O?", answer: "Sauerstoff" }
+            ],
+            Aufgabe: [
+                { question: "Trinke 3 Schlucke Wasser.", answer: "N/A" }
+            ],
+            "Team Challenge": [
+                { question: "Alle Teammitglieder müssen etwas singen.", answer: "N/A" }
+            ],
+            Duell: [
+                { question: "Fordere einen anderen Spieler zu einem Armdrücken heraus.", answer: "N/A" }
+            ]
+        };
+
+        let currentCategory = "";
+        let currentPlayerIndex = 0;
+
+        function showTeamSelection() {
+            document.getElementById("start-screen").style.display = "none";
+            document.getElementById("team-selection").style.display = "block";
+        }
+
+        function addPlayer() {
+            const playerName = document.getElementById("player-name").value;
+            const teamName = document.getElementById("team-name").value;
+            if (!playerName) {
+                alert("Bitte einen Spielernamen eingeben.");
+                return;
+            }
+
+            players.push({ name: playerName, team: teamName, points: 0 });
+            if (!teams[teamName]) teams[teamName] = 0;
+
+            const playerList = document.getElementById("player-list");
+            playerList.innerHTML += `<p>${playerName} - ${teamName}</p>`;
+
+            document.getElementById("player-name").value = "";
+        }
+
+        function showCategorySelection() {
+            document.getElementById("team-selection").style.display = "none";
+            document.getElementById("category-selection").style.display = "block";
+        }
+
+        function selectCategory(category) {
+            currentCategory = category;
+            document.getElementById("category-selection").style.display = "none";
+            document.getElementById("question-screen").style.display = "block";
+
+            const question = questions[category][Math.floor(Math.random() * questions[category].length)];
+            document.getElementById("question-text").innerText = question.question;
+            document.getElementById("question-text").dataset.answer = question.answer;
+        }
+
+        function showAnswer() {
+            const answer = document.getElementById("question-text").dataset.answer;
+            alert("Lösung: " + answer);
+        }
+
+        function answerCorrect() {
+            players[currentPlayerIndex].points += 50;
+            teams[players[currentPlayerIndex].team] += 50;
+            nextPlayer();
+        }
+
+        function answerWrong() {
+            players[currentPlayerIndex].points -= 50;
+            teams[players[currentPlayerIndex].team] -= 50;
+            nextPlayer();
+        }
+
+        function nextPlayer() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            document.getElementById("question-screen").style.display = "none";
+            document.getElementById("category-selection").style.display = "block";
+        }
+    </script>
+</body>
+</html>
