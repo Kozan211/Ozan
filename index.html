@@ -1,208 +1,387 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Silvester Trinkspiel</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to bottom, #2c3e50, #000);
-            color: white;
-            text-align: center;
-        }
-        .container {
-            padding: 20px;
-        }
-        .title {
-            font-size: 50px;
-            margin: 20px 0;
-            color: orange;
-        }
-        .question-box, .team-box, .category-box {
-            margin: 20px auto;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            max-width: 600px;
-        }
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: orange;
-            border: none;
-            color: black;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: darkorange;
-        }
-    </style>
-</head>
-<body>
-    <div class="container" id="app">
-        <div id="start-screen">
-            <div class="title">Silvester Trinkspiel</div>
-            <p>Ein lustiges Spiel für Silvester!</p>
-            <button onclick="showTeamSelection()">Start</button>
-        </div>
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
-        <div id="team-selection" style="display:none">
-            <div class="title">Teams erstellen</div>
-            <div class="team-box">
-                <input type="text" id="player-name" placeholder="Spielername">
-                <select id="team-name">
-                    <option value="Team 1">Team 1</option>
-                    <option value="Team 2">Team 2</option>
-                    <option value="Team 3">Team 3</option>
-                    <option value="Team 4">Team 4</option>
-                </select>
-                <button onclick="addPlayer()">Hinzufügen</button>
-            </div>
-            <div id="player-list"></div>
-            <button onclick="showCategorySelection()">Weiter</button>
-        </div>
+public class Main {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(SilvesterTrinkspiel::new);
+    }
+}
 
-        <div id="category-selection" style="display:none">
-            <div class="title">Kategorie auswählen</div>
-            <div class="category-box">
-                <button onclick="selectCategory('Quiz')">Quiz</button>
-                <button onclick="selectCategory('Aufgabe')">Aufgabe</button>
-                <button onclick="selectCategory('Team Challenge')">Team Challenge</button>
-                <button onclick="selectCategory('Duell')">Duell</button>
-            </div>
-        </div>
+class SilvesterTrinkspiel {
+    private JFrame frame;
+    private ArrayList<String> players = new ArrayList<>();
+    private ArrayList<String> teams = new ArrayList<>();
+    private Map<String, Integer> teamPoints = new HashMap<>();
+    private Map<String, Integer> playerPoints = new HashMap<>();
+    private Map<String, List<Question>> categoryQuestions = new HashMap<>();
+    private int currentPlayerIndex = 0;
 
-        <div id="question-screen" style="display:none">
-            <div class="title">Frage</div>
-            <div id="question-text" class="question-box"></div>
-            <button onclick="showAnswer()">Lösung anzeigen</button>
-            <button onclick="answerCorrect()" style="background-color:green;">Richtig</button>
-            <button onclick="answerWrong()" style="background-color:red;">Falsch</button>
-        </div>
+    public SilvesterTrinkspiel() {
+        initialize();
+        loadQuestionsFromTextFile("src/Trinkspiel_Silvester.txt");
+    }
 
-        <div id="answer-screen" style="display:none">
-            <div class="title">Lösung</div>
-            <div id="answer-text" class="question-box"></div>
-            <button onclick="nextPlayer()">Weiter</button>
-        </div>
+    private void loadQuestionsFromTextFile(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";");
+                if (parts.length >= 3) {
+                    String category = parts[0].trim();
+                    String question = parts[1].trim();
+                    String answer = parts[2].trim();
 
-        <div id="points-screen" style="display:none">
-            <div class="title">Punkteübersicht</div>
-            <div id="points-text" class="question-box"></div>
-        </div>
-    </div>
+                    categoryQuestions.computeIfAbsent(category, k -> new ArrayList<>()).add(new Question(question, answer));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Fehler beim Laden der Textdatei: " + e.getMessage());
+        }
+    }
 
-    <script>
-        const players = [];
-        const teams = {};
-        const questions = {
-            Quiz: [],
-            Aufgabe: [],
-            "Team Challenge": [],
-            Duell: []
+    private void initialize() {
+        frame = new JFrame("Silvester Trinkspiel");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(900, 700);
+        frame.setLayout(new BorderLayout());
+
+        showOpeningSequence();
+    }
+
+    private void showOpeningSequence() {
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gradient = new GradientPaint(0, 0, Color.DARK_GRAY, getWidth(), getHeight(), Color.BLACK);
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
         };
+        panel.setLayout(new BorderLayout());
+        frame.add(panel);
 
-        let currentCategory = "";
-        let currentPlayerIndex = 0;
+        JLabel titleLabel = new JLabel("2025", JLabel.CENTER);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 150));
+        titleLabel.setForeground(Color.ORANGE);
+        titleLabel.setBorder(new EmptyBorder(50, 0, 20, 0));
+        panel.add(titleLabel, BorderLayout.NORTH);
 
-        async function loadQuestions() {
-            try {
-                const response = await fetch("Trinkspiel_Silvester.txt");
-                const text = await response.text();
-                const lines = text.split("\n");
+        JTextArea scrollingText = new JTextArea();
+        scrollingText.setEditable(false);
+        scrollingText.setBackground(Color.BLACK);
+        scrollingText.setForeground(Color.LIGHT_GRAY);
+        scrollingText.setFont(new Font("SansSerif", Font.PLAIN, 24));
+        scrollingText.setWrapStyleWord(true);
+        scrollingText.setLineWrap(true);
+        scrollingText.setBorder(new EmptyBorder(20, 50, 20, 50));
+        JScrollPane scrollPane = new JScrollPane(scrollingText);
+        scrollPane.setBorder(null);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
-                lines.forEach(line => {
-                    const [category, question, answer] = line.split("|").map(item => item.trim());
-                    if (questions[category]) {
-                        questions[category].push({ question, answer });
-                    }
-                });
-            } catch (error) {
-                alert("Fehler beim Laden der Fragen: " + error.message);
+        JLabel presentedByLabel = new JLabel("Presented by Ozan & ChatGPT", JLabel.CENTER);
+        presentedByLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        presentedByLabel.setForeground(Color.LIGHT_GRAY);
+        presentedByLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        panel.add(presentedByLabel, BorderLayout.SOUTH);
+
+        String text = "Es sind fast 1500 Tage vergangen, seit unsere Reise begann. \n" +
+                "Seitdem haben wir die Wüsten Dubais unsicher gemacht, die Strände der Türkei erobert, \n" +
+                "durch die Grachten Amsterdams geschippert – und das alles meistens mit einem Glas in der Hand und mit 1,8 Promille.\n\n" +
+                "Wir haben viel gelacht, noch mehr getrunken und so manche Nacht unvergesslich gemacht. \n" +
+                "Heute, an Silvester, stoßen wir nicht nur auf das neue Jahr an, sondern auf uns – \n" +
+                "auf Freundschaft, Geschichten und darauf, dass das Glas nie leer wird!";
+
+        String[] lines = text.split("\\n");
+        Timer textTimer = new Timer(1000, new ActionListener() {
+            int lineIndex = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (lineIndex < lines.length) {
+                    scrollingText.append(lines[lineIndex] + "\n");
+                    scrollingText.setCaretPosition(scrollingText.getDocument().getLength());
+                    lineIndex++;
+                } else {
+                    ((Timer) e.getSource()).stop();
+                }
             }
-        }
+        });
+        textTimer.start();
 
-        loadQuestions();
-
-        function showTeamSelection() {
-            document.getElementById("start-screen").style.display = "none";
-            document.getElementById("team-selection").style.display = "block";
-        }
-
-        function addPlayer() {
-            const playerName = document.getElementById("player-name").value;
-            const teamName = document.getElementById("team-name").value;
-            if (!playerName) {
-                alert("Bitte einen Spielernamen eingeben.");
-                return;
+        JButton weiterButton = new JButton("Weiter");
+        weiterButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        weiterButton.setBackground(Color.ORANGE);
+        weiterButton.setForeground(Color.BLACK);
+        weiterButton.setFocusPainted(false);
+        weiterButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        weiterButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                openTeamSelection();
             }
+        });
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.add(weiterButton);
+        panel.add(buttonPanel, BorderLayout.EAST);
 
-            players.push({ name: playerName, team: teamName, points: 0 });
-            if (!teams[teamName]) teams[teamName] = 0;
+        frame.setVisible(true);
+    }
 
-            const playerList = document.getElementById("player-list");
-            playerList.innerHTML += `<p>${playerName} - ${teamName}</p>`;
+    private void openTeamSelection() {
+        JFrame teamFrame = new JFrame("Teams erstellen");
+        teamFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        teamFrame.setSize(900, 700);
+        teamFrame.setLayout(new BorderLayout());
 
-            document.getElementById("player-name").value = "";
-        }
+        JLabel instructionLabel = new JLabel("Geben Sie den Namen und das Team ein:", JLabel.CENTER);
+        instructionLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        instructionLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        teamFrame.add(instructionLabel, BorderLayout.NORTH);
 
-        function showCategorySelection() {
-            document.getElementById("team-selection").style.display = "none";
-            document.getElementById("category-selection").style.display = "block";
-        }
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        inputPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
 
-        function selectCategory(category) {
-            currentCategory = category;
-            document.getElementById("category-selection").style.display = "none";
-            document.getElementById("question-screen").style.display = "block";
+        JLabel nameLabel = new JLabel("Spielername:", JLabel.RIGHT);
+        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        inputPanel.add(nameLabel);
 
-            const question = questions[category][Math.floor(Math.random() * questions[category].length)];
-            document.getElementById("question-text").innerText = question.question;
-            document.getElementById("question-text").dataset.answer = question.answer;
-        }
+        JTextField playerNameField = new JTextField();
+        playerNameField.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        inputPanel.add(playerNameField);
 
-        function showAnswer() {
-            const answer = document.getElementById("question-text").dataset.answer;
-            alert("Lösung: " + answer);
-        }
+        JLabel teamLabel = new JLabel("Team:", JLabel.RIGHT);
+        teamLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        inputPanel.add(teamLabel);
 
-        function answerCorrect() {
-            const currentPlayer = players[currentPlayerIndex];
-            currentPlayer.points += 50;
-            teams[currentPlayer.team] += 50;
-            updatePointsScreen();
-            nextPlayer();
-        }
+        JComboBox<String> teamSelector = new JComboBox<>(new String[]{"Team 1", "Team 2", "Team 3", "Team 4"});
+        teamSelector.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        inputPanel.add(teamSelector);
 
-        function answerWrong() {
-            const currentPlayer = players[currentPlayerIndex];
-            currentPlayer.points -= 50;
-            teams[currentPlayer.team] -= 50;
-            updatePointsScreen();
-            nextPlayer();
-        }
+        JTextArea playerList = new JTextArea();
+        playerList.setEditable(false);
+        playerList.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        playerList.setBorder(BorderFactory.createLineBorder(Color.ORANGE, 2));
+        JScrollPane scrollPane = new JScrollPane(playerList);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Spielerliste"));
 
-        function nextPlayer() {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
-            document.getElementById("question-screen").style.display = "none";
-            document.getElementById("category-selection").style.display = "block";
-        }
+        JButton addButton = new JButton("Hinzufügen");
+        addButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        addButton.setBackground(Color.ORANGE);
+        addButton.setForeground(Color.BLACK);
+        addButton.setFocusPainted(false);
+        addButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String playerName = playerNameField.getText().trim();
+                String team = (String) teamSelector.getSelectedItem();
 
-        function updatePointsScreen() {
-            const pointsText = document.getElementById("points-text");
-            pointsText.innerHTML = "";
-            for (const player of players) {
-                pointsText.innerHTML += `<p>${player.name} (${player.team}): ${player.points} Punkte</p>`;
+                if (!playerName.isEmpty()) {
+                    players.add(playerName);
+                    teams.add(team);
+                    playerPoints.put(playerName, 0);
+                    teamPoints.put(team, teamPoints.getOrDefault(team, 0));
+                    playerList.append(playerName + " - " + team + "\n");
+                    playerNameField.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(teamFrame, "Bitte geben Sie einen Spielernamen ein.", "Fehler", JOptionPane.ERROR_MESSAGE);
+                }
             }
-            for (const [team, points] of Object.entries(teams)) {
-                pointsText.innerHTML += `<p>${team}: ${points} Punkte</p>`;
+        });
+
+        JButton weiterButton = new JButton("Weiter");
+        weiterButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        weiterButton.setBackground(Color.ORANGE);
+        weiterButton.setForeground(Color.BLACK);
+        weiterButton.setFocusPainted(false);
+        weiterButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        weiterButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (players.isEmpty()) {
+                    JOptionPane.showMessageDialog(teamFrame, "Bitte fügen Sie mindestens einen Spieler hinzu.", "Fehler", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    teamFrame.dispose();
+                    openCategorySelection();
+                }
             }
+        });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.add(addButton);
+        buttonPanel.add(weiterButton);
+
+        teamFrame.add(inputPanel, BorderLayout.NORTH);
+        teamFrame.add(scrollPane, BorderLayout.CENTER);
+        teamFrame.add(buttonPanel, BorderLayout.SOUTH);
+        teamFrame.setVisible(true);
+    }
+
+    private void openCategorySelection() {
+        JFrame categoryFrame = new JFrame("Kategorie auswählen");
+        categoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        categoryFrame.setSize(900, 700);
+        categoryFrame.setLayout(new BorderLayout());
+
+        JPanel pointsPanel = new JPanel(new GridLayout(2, 2));
+        pointsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        for (String team : new String[]{"Team 1", "Team 2", "Team 3", "Team 4"}) {
+            JTextArea teamInfo = new JTextArea();
+            teamInfo.setEditable(false);
+            teamInfo.setFont(new Font("SansSerif", Font.PLAIN, 18));
+            teamInfo.append(team + " - Punkte: " + teamPoints.getOrDefault(team, 0) + "\n");
+            for (int i = 0; i < players.size(); i++) {
+                if (teams.get(i).equals(team)) {
+                    teamInfo.append(players.get(i) + " - Punkte: " + playerPoints.get(players.get(i)) + "\n");
+                }
+            }
+            JScrollPane scrollPane = new JScrollPane(teamInfo);
+            scrollPane.setBorder(BorderFactory.createTitledBorder(team));
+            pointsPanel.add(scrollPane);
         }
-    </script>
-</body>
-</html>
+
+        categoryFrame.add(pointsPanel, BorderLayout.NORTH);
+
+        JLabel instructionLabel = new JLabel("Wählen Sie eine Kategorie aus (Spieler: " + players.get(currentPlayerIndex) + "):", JLabel.CENTER);
+        instructionLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        categoryFrame.add(instructionLabel, BorderLayout.CENTER);
+
+        JPanel categoryPanel = new JPanel();
+        categoryPanel.setLayout(new GridLayout(2, 2, 10, 10));
+
+        String[] categories = {"Quiz", "Aufgabe", "Team Challenge", "Duell"};
+        for (String category : categories) {
+            JButton categoryButton = new JButton(category);
+            categoryButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+            categoryButton.setBackground(Color.ORANGE);
+            categoryButton.setForeground(Color.BLACK);
+            categoryButton.setFocusPainted(false);
+            categoryButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+            categoryButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    categoryFrame.dispose();
+                    showTaskOrQuestion(category);
+                }
+            });
+            categoryPanel.add(categoryButton);
+        }
+
+        categoryFrame.add(categoryPanel, BorderLayout.SOUTH);
+        categoryFrame.setVisible(true);
+    }
+
+    private void showTaskOrQuestion(String category) {
+        JFrame taskFrame = new JFrame(category);
+        taskFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        taskFrame.setSize(900, 700);
+        taskFrame.setLayout(new BorderLayout());
+
+        List<Question> questions = categoryQuestions.get(category);
+        Question selectedQuestion = questions != null && !questions.isEmpty() ?
+                questions.get(new Random().nextInt(questions.size())) :
+                new Question("Keine Fragen verfügbar", "N/A");
+
+        JLabel taskLabel = new JLabel("Frage: " + selectedQuestion.getQuestion(), JLabel.CENTER);
+        taskLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        taskLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        taskFrame.add(taskLabel, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+
+        JButton showAnswerButton = new JButton("Lösung anzeigen");
+        showAnswerButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        showAnswerButton.setBackground(Color.BLUE);
+        showAnswerButton.setForeground(Color.WHITE);
+        showAnswerButton.setFocusPainted(false);
+        showAnswerButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        showAnswerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JOptionPane.showMessageDialog(taskFrame, "Lösung: " + selectedQuestion.getAnswer(), "Lösung", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
+        JButton correctButton = new JButton("Richtig");
+        correctButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        correctButton.setBackground(Color.GREEN);
+        correctButton.setForeground(Color.BLACK);
+        correctButton.setFocusPainted(false);
+        correctButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        correctButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int points = 50;
+                String currentPlayer = players.get(currentPlayerIndex);
+                playerPoints.put(currentPlayer, playerPoints.get(currentPlayer) + points);
+                String team = teams.get(currentPlayerIndex);
+                teamPoints.put(team, teamPoints.get(team) + points);
+                JOptionPane.showMessageDialog(taskFrame, currentPlayer + " hat " + points + " Punkte gewonnen!");
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                taskFrame.dispose();
+                openCategorySelection();
+            }
+        });
+
+        JButton wrongButton = new JButton("Falsch");
+        wrongButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        wrongButton.setBackground(Color.RED);
+        wrongButton.setForeground(Color.BLACK);
+        wrongButton.setFocusPainted(false);
+        wrongButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        wrongButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int points = -50;
+                String currentPlayer = players.get(currentPlayerIndex);
+                playerPoints.put(currentPlayer, playerPoints.get(currentPlayer) + points);
+                String team = teams.get(currentPlayerIndex);
+                teamPoints.put(team, teamPoints.get(team) + points);
+                JOptionPane.showMessageDialog(taskFrame, currentPlayer + " hat " + points + " Punkte verloren.");
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                taskFrame.dispose();
+                openCategorySelection();
+            }
+        });
+
+        buttonPanel.add(showAnswerButton);
+        buttonPanel.add(correctButton);
+        buttonPanel.add(wrongButton);
+        taskFrame.add(buttonPanel, BorderLayout.SOUTH);
+
+        taskFrame.setVisible(true);
+    }
+}
+
+class Question {
+    private String question;
+    private String answer;
+
+    public Question(String question, String answer) {
+        this.question = question;
+        this.answer = answer;
+    }
+
+    public String getQuestion() {
+        return question;
+    }
+
+    public String getAnswer() {
+        return answer;
+    }
+}
