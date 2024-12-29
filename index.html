@@ -90,29 +90,44 @@
             <div id="answer-text" class="question-box"></div>
             <button onclick="nextPlayer()">Weiter</button>
         </div>
+
+        <div id="points-screen" style="display:none">
+            <div class="title">Punkteübersicht</div>
+            <div id="points-text" class="question-box"></div>
+        </div>
     </div>
 
     <script>
         const players = [];
         const teams = {};
         const questions = {
-            Quiz: [
-                { question: "Wie viele Spieler stehen gleichzeitig pro Team bei einem Fußballspiel auf dem Platz?", answer: "11" },
-                { question: "Welches Element hat das chemische Symbol O?", answer: "Sauerstoff" }
-            ],
-            Aufgabe: [
-                { question: "Trinke 3 Schlucke Wasser.", answer: "N/A" }
-            ],
-            "Team Challenge": [
-                { question: "Alle Teammitglieder müssen etwas singen.", answer: "N/A" }
-            ],
-            Duell: [
-                { question: "Fordere einen anderen Spieler zu einem Armdrücken heraus.", answer: "N/A" }
-            ]
+            Quiz: [],
+            Aufgabe: [],
+            "Team Challenge": [],
+            Duell: []
         };
 
         let currentCategory = "";
         let currentPlayerIndex = 0;
+
+        async function loadQuestions() {
+            try {
+                const response = await fetch("Trinkspiel_Silvester.txt");
+                const text = await response.text();
+                const lines = text.split("\n");
+
+                lines.forEach(line => {
+                    const [category, question, answer] = line.split("|").map(item => item.trim());
+                    if (questions[category]) {
+                        questions[category].push({ question, answer });
+                    }
+                });
+            } catch (error) {
+                alert("Fehler beim Laden der Fragen: " + error.message);
+            }
+        }
+
+        loadQuestions();
 
         function showTeamSelection() {
             document.getElementById("start-screen").style.display = "none";
@@ -157,14 +172,18 @@
         }
 
         function answerCorrect() {
-            players[currentPlayerIndex].points += 50;
-            teams[players[currentPlayerIndex].team] += 50;
+            const currentPlayer = players[currentPlayerIndex];
+            currentPlayer.points += 50;
+            teams[currentPlayer.team] += 50;
+            updatePointsScreen();
             nextPlayer();
         }
 
         function answerWrong() {
-            players[currentPlayerIndex].points -= 50;
-            teams[players[currentPlayerIndex].team] -= 50;
+            const currentPlayer = players[currentPlayerIndex];
+            currentPlayer.points -= 50;
+            teams[currentPlayer.team] -= 50;
+            updatePointsScreen();
             nextPlayer();
         }
 
@@ -172,6 +191,17 @@
             currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
             document.getElementById("question-screen").style.display = "none";
             document.getElementById("category-selection").style.display = "block";
+        }
+
+        function updatePointsScreen() {
+            const pointsText = document.getElementById("points-text");
+            pointsText.innerHTML = "";
+            for (const player of players) {
+                pointsText.innerHTML += `<p>${player.name} (${player.team}): ${player.points} Punkte</p>`;
+            }
+            for (const [team, points] of Object.entries(teams)) {
+                pointsText.innerHTML += `<p>${team}: ${points} Punkte</p>`;
+            }
         }
     </script>
 </body>
