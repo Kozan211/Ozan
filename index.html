@@ -1,3 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silvester Trinkspiel</title>
+</head>
+<body>
+    <pre>
+        <code>
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -140,232 +150,6 @@ class SilvesterTrinkspiel {
 
         frame.setVisible(true);
     }
-
-    private void openTeamSelection() {
-        JFrame teamFrame = new JFrame("Teams erstellen");
-        teamFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        teamFrame.setSize(900, 700);
-        teamFrame.setLayout(new BorderLayout());
-
-        JLabel instructionLabel = new JLabel("Geben Sie den Namen und das Team ein:", JLabel.CENTER);
-        instructionLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-        instructionLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
-        teamFrame.add(instructionLabel, BorderLayout.NORTH);
-
-        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 10, 10));
-        inputPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
-
-        JLabel nameLabel = new JLabel("Spielername:", JLabel.RIGHT);
-        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
-        inputPanel.add(nameLabel);
-
-        JTextField playerNameField = new JTextField();
-        playerNameField.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        inputPanel.add(playerNameField);
-
-        JLabel teamLabel = new JLabel("Team:", JLabel.RIGHT);
-        teamLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
-        inputPanel.add(teamLabel);
-
-        JComboBox<String> teamSelector = new JComboBox<>(new String[]{"Team 1", "Team 2", "Team 3", "Team 4"});
-        teamSelector.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        inputPanel.add(teamSelector);
-
-        JTextArea playerList = new JTextArea();
-        playerList.setEditable(false);
-        playerList.setFont(new Font("SansSerif", Font.PLAIN, 18));
-        playerList.setBorder(BorderFactory.createLineBorder(Color.ORANGE, 2));
-        JScrollPane scrollPane = new JScrollPane(playerList);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Spielerliste"));
-
-        JButton addButton = new JButton("Hinzufügen");
-        addButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-        addButton.setBackground(Color.ORANGE);
-        addButton.setForeground(Color.BLACK);
-        addButton.setFocusPainted(false);
-        addButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String playerName = playerNameField.getText().trim();
-                String team = (String) teamSelector.getSelectedItem();
-
-                if (!playerName.isEmpty()) {
-                    players.add(playerName);
-                    teams.add(team);
-                    playerPoints.put(playerName, 0);
-                    teamPoints.put(team, teamPoints.getOrDefault(team, 0));
-                    playerList.append(playerName + " - " + team + "\n");
-                    playerNameField.setText("");
-                } else {
-                    JOptionPane.showMessageDialog(teamFrame, "Bitte geben Sie einen Spielernamen ein.", "Fehler", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        JButton weiterButton = new JButton("Weiter");
-        weiterButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-        weiterButton.setBackground(Color.ORANGE);
-        weiterButton.setForeground(Color.BLACK);
-        weiterButton.setFocusPainted(false);
-        weiterButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        weiterButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (players.isEmpty()) {
-                    JOptionPane.showMessageDialog(teamFrame, "Bitte fügen Sie mindestens einen Spieler hinzu.", "Fehler", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    teamFrame.dispose();
-                    openCategorySelection();
-                }
-            }
-        });
-
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.add(addButton);
-        buttonPanel.add(weiterButton);
-
-        teamFrame.add(inputPanel, BorderLayout.NORTH);
-        teamFrame.add(scrollPane, BorderLayout.CENTER);
-        teamFrame.add(buttonPanel, BorderLayout.SOUTH);
-        teamFrame.setVisible(true);
-    }
-
-    private void openCategorySelection() {
-        JFrame categoryFrame = new JFrame("Kategorie auswählen");
-        categoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        categoryFrame.setSize(900, 700);
-        categoryFrame.setLayout(new BorderLayout());
-
-        JPanel pointsPanel = new JPanel(new GridLayout(2, 2));
-        pointsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        for (String team : new String[]{"Team 1", "Team 2", "Team 3", "Team 4"}) {
-            JTextArea teamInfo = new JTextArea();
-            teamInfo.setEditable(false);
-            teamInfo.setFont(new Font("SansSerif", Font.PLAIN, 18));
-            teamInfo.append(team + " - Punkte: " + teamPoints.getOrDefault(team, 0) + "\n");
-            for (int i = 0; i < players.size(); i++) {
-                if (teams.get(i).equals(team)) {
-                    teamInfo.append(players.get(i) + " - Punkte: " + playerPoints.get(players.get(i)) + "\n");
-                }
-            }
-            JScrollPane scrollPane = new JScrollPane(teamInfo);
-            scrollPane.setBorder(BorderFactory.createTitledBorder(team));
-            pointsPanel.add(scrollPane);
-        }
-
-        categoryFrame.add(pointsPanel, BorderLayout.NORTH);
-
-        JLabel instructionLabel = new JLabel("Wählen Sie eine Kategorie aus (Spieler: " + players.get(currentPlayerIndex) + "):", JLabel.CENTER);
-        instructionLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-        categoryFrame.add(instructionLabel, BorderLayout.CENTER);
-
-        JPanel categoryPanel = new JPanel();
-        categoryPanel.setLayout(new GridLayout(2, 2, 10, 10));
-
-        String[] categories = {"Quiz", "Aufgabe", "Team Challenge", "Duell"};
-        for (String category : categories) {
-            JButton categoryButton = new JButton(category);
-            categoryButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-            categoryButton.setBackground(Color.ORANGE);
-            categoryButton.setForeground(Color.BLACK);
-            categoryButton.setFocusPainted(false);
-            categoryButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-            categoryButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    categoryFrame.dispose();
-                    showTaskOrQuestion(category);
-                }
-            });
-            categoryPanel.add(categoryButton);
-        }
-
-        categoryFrame.add(categoryPanel, BorderLayout.SOUTH);
-        categoryFrame.setVisible(true);
-    }
-
-    private void showTaskOrQuestion(String category) {
-        JFrame taskFrame = new JFrame(category);
-        taskFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        taskFrame.setSize(900, 700);
-        taskFrame.setLayout(new BorderLayout());
-
-        List<Question> questions = categoryQuestions.get(category);
-        Question selectedQuestion = questions != null && !questions.isEmpty() ?
-                questions.get(new Random().nextInt(questions.size())) :
-                new Question("Keine Fragen verfügbar", "N/A");
-
-        JLabel taskLabel = new JLabel("Frage: " + selectedQuestion.getQuestion(), JLabel.CENTER);
-        taskLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-        taskLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        taskFrame.add(taskLabel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel();
-
-        JButton showAnswerButton = new JButton("Lösung anzeigen");
-        showAnswerButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-        showAnswerButton.setBackground(Color.BLUE);
-        showAnswerButton.setForeground(Color.WHITE);
-        showAnswerButton.setFocusPainted(false);
-        showAnswerButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        showAnswerButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(taskFrame, "Lösung: " + selectedQuestion.getAnswer(), "Lösung", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-
-        JButton correctButton = new JButton("Richtig");
-        correctButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-        correctButton.setBackground(Color.GREEN);
-        correctButton.setForeground(Color.BLACK);
-        correctButton.setFocusPainted(false);
-        correctButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        correctButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int points = 50;
-                String currentPlayer = players.get(currentPlayerIndex);
-                playerPoints.put(currentPlayer, playerPoints.get(currentPlayer) + points);
-                String team = teams.get(currentPlayerIndex);
-                teamPoints.put(team, teamPoints.get(team) + points);
-                JOptionPane.showMessageDialog(taskFrame, currentPlayer + " hat " + points + " Punkte gewonnen!");
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-                taskFrame.dispose();
-                openCategorySelection();
-            }
-        });
-
-        JButton wrongButton = new JButton("Falsch");
-        wrongButton.setFont(new Font("SansSerif", Font.BOLD, 20));
-        wrongButton.setBackground(Color.RED);
-        wrongButton.setForeground(Color.BLACK);
-        wrongButton.setFocusPainted(false);
-        wrongButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        wrongButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int points = -50;
-                String currentPlayer = players.get(currentPlayerIndex);
-                playerPoints.put(currentPlayer, playerPoints.get(currentPlayer) + points);
-                String team = teams.get(currentPlayerIndex);
-                teamPoints.put(team, teamPoints.get(team) + points);
-                JOptionPane.showMessageDialog(taskFrame, currentPlayer + " hat " + points + " Punkte verloren.");
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-                taskFrame.dispose();
-                openCategorySelection();
-            }
-        });
-
-        buttonPanel.add(showAnswerButton);
-        buttonPanel.add(correctButton);
-        buttonPanel.add(wrongButton);
-        taskFrame.add(buttonPanel, BorderLayout.SOUTH);
-
-        taskFrame.setVisible(true);
-    }
 }
 
 class Question {
@@ -385,3 +169,7 @@ class Question {
         return answer;
     }
 }
+        </code>
+    </pre>
+</body>
+</html>
