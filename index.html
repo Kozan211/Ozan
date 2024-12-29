@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silvester Trinkspiel</title>
+</head>
+<body>
+    <pre>
+        <code>
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+public class Main {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(SilvesterTrinkspiel::new);
+    }
+}
+
+class SilvesterTrinkspiel {
+    private JFrame frame;
+    private ArrayList<String> players = new ArrayList<>();
+    private ArrayList<String> teams = new ArrayList<>();
+    private Map<String, Integer> teamPoints = new HashMap<>();
+    private Map<String, Integer> playerPoints = new HashMap<>();
+    private Map<String, List<Question>> categoryQuestions = new HashMap<>();
+    private int currentPlayerIndex = 0;
+
+    public SilvesterTrinkspiel() {
+        initialize();
+        loadQuestionsFromTextFile("src/Trinkspiel_Silvester.txt");
+    }
+
+    private void loadQuestionsFromTextFile(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";");
+                if (parts.length >= 3) {
+                    String category = parts[0].trim();
+                    String question = parts[1].trim();
+                    String answer = parts[2].trim();
+
+                    categoryQuestions.computeIfAbsent(category, k -> new ArrayList<>()).add(new Question(question, answer));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Fehler beim Laden der Textdatei: " + e.getMessage());
+        }
+    }
+
+    private void initialize() {
+        frame = new JFrame("Silvester Trinkspiel");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(900, 700);
+        frame.setLayout(new BorderLayout());
+
+        showOpeningSequence();
+    }
+
+    private void showOpeningSequence() {
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gradient = new GradientPaint(0, 0, Color.DARK_GRAY, getWidth(), getHeight(), Color.BLACK);
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        panel.setLayout(new BorderLayout());
+        frame.add(panel);
+
+        JLabel titleLabel = new JLabel("2025", JLabel.CENTER);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 150));
+        titleLabel.setForeground(Color.ORANGE);
+        titleLabel.setBorder(new EmptyBorder(50, 0, 20, 0));
+        panel.add(titleLabel, BorderLayout.NORTH);
+
+        JTextArea scrollingText = new JTextArea();
+        scrollingText.setEditable(false);
+        scrollingText.setBackground(Color.BLACK);
+        scrollingText.setForeground(Color.LIGHT_GRAY);
+        scrollingText.setFont(new Font("SansSerif", Font.PLAIN, 24));
+        scrollingText.setWrapStyleWord(true);
+        scrollingText.setLineWrap(true);
+        scrollingText.setBorder(new EmptyBorder(20, 50, 20, 50));
+        JScrollPane scrollPane = new JScrollPane(scrollingText);
+        scrollPane.setBorder(null);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        JLabel presentedByLabel = new JLabel("Presented by Ozan & ChatGPT", JLabel.CENTER);
+        presentedByLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        presentedByLabel.setForeground(Color.LIGHT_GRAY);
+        presentedByLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        panel.add(presentedByLabel, BorderLayout.SOUTH);
+
+        String text = "Es sind fast 1500 Tage vergangen, seit unsere Reise begann. \n" +
+                "Seitdem haben wir die Wüsten Dubais unsicher gemacht, die Strände der Türkei erobert, \n" +
+                "durch die Grachten Amsterdams geschippert – und das alles meistens mit einem Glas in der Hand und mit 1,8 Promille.\n\n" +
+                "Wir haben viel gelacht, noch mehr getrunken und so manche Nacht unvergesslich gemacht. \n" +
+                "Heute, an Silvester, stoßen wir nicht nur auf das neue Jahr an, sondern auf uns – \n" +
+                "auf Freundschaft, Geschichten und darauf, dass das Glas nie leer wird!";
+
+        String[] lines = text.split("\\n");
+        Timer textTimer = new Timer(1000, new ActionListener() {
+            int lineIndex = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (lineIndex < lines.length) {
+                    scrollingText.append(lines[lineIndex] + "\n");
+                    scrollingText.setCaretPosition(scrollingText.getDocument().getLength());
+                    lineIndex++;
+                } else {
+                    ((Timer) e.getSource()).stop();
+                }
+            }
+        });
+        textTimer.start();
+
+        JButton weiterButton = new JButton("Weiter");
+        weiterButton.setFont(new Font("SansSerif", Font.BOLD, 20));
+        weiterButton.setBackground(Color.ORANGE);
+        weiterButton.setForeground(Color.BLACK);
+        weiterButton.setFocusPainted(false);
+        weiterButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        weiterButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                openTeamSelection();
+            }
+        });
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.add(weiterButton);
+        panel.add(buttonPanel, BorderLayout.EAST);
+
+        frame.setVisible(true);
+    }
+}
+
+class Question {
+    private String question;
+    private String answer;
+
+    public Question(String question, String answer) {
+        this.question = question;
+        this.answer = answer;
+    }
+
+    public String getQuestion() {
+        return question;
+    }
+
+    public String getAnswer() {
+        return answer;
+    }
+}
+        </code>
+    </pre>
+</body>
+</html>
